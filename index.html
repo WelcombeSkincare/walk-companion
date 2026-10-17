@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f2a3d">
+  <title>Walk Companion</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-title">
+      <div id="routeTitle">Walk Companion</div>
+      <div id="routeSub" class="sub"></div>
+    </div>
+    <button id="viewToggle" class="pill" aria-label="Switch between leader and walker view">Leader</button>
+  </header>
+
+  <div id="statusbar" class="statusbar">
+    <span id="gpsStatus" class="gps off">GPS off</span>
+    <span id="progressText">0.0 / 0.0 km</span>
+    <span id="scheduleText" class="leader-only"></span>
+  </div>
+
+  <main>
+    <!-- NOW -->
+    <section id="tab-now" class="tab active">
+      <div id="startPanel" class="card">
+        <h2>Ready when you are</h2>
+        <p>Tap <strong>Start GPS</strong> at the start. The next stop's notes appear automatically as you approach it, with a buzz and a chime.</p>
+        <div class="row">
+          <button id="startGps" class="btn primary">Start GPS</button>
+          <button id="practiceBtn" class="btn">Practice mode</button>
+        </div>
+        <p class="hint" id="offlineHint"></p>
+      </div>
+
+      <div id="practicePanel" class="card hidden">
+        <label for="practiceSlider"><strong>Practice mode:</strong> drag to move along the route</label>
+        <input type="range" id="practiceSlider" min="0" max="13.2" step="0.01" value="0">
+        <div class="row small"><span id="practiceKm">0.00 km</span><button id="practiceOff" class="btn small">Exit practice</button></div>
+      </div>
+
+      <article id="stopCard" class="card stop hidden" aria-live="polite">
+        <div class="stop-head">
+          <span id="stopBadge" class="badge">Next</span>
+          <span id="stopType" class="type"></span>
+        </div>
+        <h2 id="stopName"></h2>
+        <div id="stopDetail" class="detail"></div>
+        <div id="stopDistance" class="distance"></div>
+        <div class="row actions">
+          <button id="readBtn" class="btn">🔊 Read aloud</button>
+          <button id="bgBtn" class="btn leader-only">Background</button>
+        </div>
+        <p id="stopTalk" class="talk"></p>
+        <div id="stopBackground" class="background hidden leader-only"></div>
+        <div class="row nav">
+          <button id="prevStop" class="btn small">‹ Previous</button>
+          <button id="followBtn" class="btn small">Follow GPS</button>
+          <button id="nextStop" class="btn small">Next ›</button>
+        </div>
+      </article>
+
+      <div id="nearby" class="card hidden">
+        <h3>Also around here</h3>
+        <ul id="nearbyList" class="plainlist"></ul>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section id="tab-map" class="tab">
+      <div id="map"></div>
+      <div class="map-tools">
+        <button id="centreMe" class="btn small">Centre on me</button>
+        <span id="mapNote" class="hint"></span>
+      </div>
+    </section>
+
+    <!-- STOPS -->
+    <section id="tab-stops" class="tab">
+      <div class="card"><h2>Stops</h2><p class="hint">Tap a stop to open it. Grey items are smaller points nearby.</p></div>
+      <div id="stopList"></div>
+    </section>
+
+    <!-- PLAN (leader) -->
+    <section id="tab-plan" class="tab leader-only">
+      <div class="card">
+        <h2>Day plan</h2>
+        <div id="planTable"></div>
+        <div class="row"><button id="markStart" class="btn">Set walk start time to now</button></div>
+        <p class="hint" id="planHint"></p>
+      </div>
+    </section>
+
+    <!-- NOTES (leader) -->
+    <section id="tab-notes" class="tab leader-only">
+      <div id="notesIndex" class="card"></div>
+      <div id="notesBody"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tab">
+      <div class="card">
+        <h2>Settings</h2>
+        <label class="field">Route
+          <select id="routeSelect"></select>
+        </label>
+        <label class="check"><input type="checkbox" id="autoRead"> Read main stops aloud automatically</label>
+        <label class="check"><input type="checkbox" id="chime" checked> Buzz and chime on arrival</label>
+        <label class="check"><input type="checkbox" id="wakeLock"> Keep screen on while walking</label>
+        <label class="field">Arrival distance: <span id="radiusVal">60</span> m
+          <input type="range" id="radius" min="25" max="150" step="5" value="60">
+        </label>
+        <label class="field">Reading speed: <span id="rateVal">1.0</span>
+          <input type="range" id="rate" min="0.7" max="1.3" step="0.05" value="1.0">
+        </label>
+      </div>
+      <div class="card">
+        <h2>Offline</h2>
+        <p>Do this at home on Wi-Fi before the walk. It saves the app, the walk notes and the map for the walk area onto this phone.</p>
+        <label class="field">OS Maps API key
+          <input type="text" id="osKey" placeholder="Paste OS Data Hub key" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="downloadMap" class="btn primary">Save walk and map for offline</button>
+        <div id="dlProgress" class="hint"></div>
+      </div>
+      <div class="card">
+        <h2>About</h2>
+        <p class="hint" id="aboutText"></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" role="tablist">
+    <button data-tab="now" class="active">Now</button>
+    <button data-tab="map">Map</button>
+    <button data-tab="stops">Stops</button>
+    <button data-tab="plan" class="leader-only">Plan</button>
+    <button data-tab="notes" class="leader-only">Notes</button>
+    <button data-tab="settings">⚙︎</button>
+  </nav>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="config.js"></script>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
